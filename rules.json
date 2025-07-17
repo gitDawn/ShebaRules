@@ -1,0 +1,107 @@
+{
+  "rules": [
+    {
+      "id": "rule_base",
+      "text": "If {BG < 50} and {hypothermia} then go to ER",
+      "elements": [
+        {
+          "text": "BG < 50",
+          "type": "condition"
+        },
+        {
+          "text": "hypothermia",
+          "type": "rule",
+          "expansion": {
+            "text": "the {body is cold} and {looks pale}",
+            "elements": [
+              {
+                "text": "body is cold",
+                "type": "rule",
+                "expansion": {
+                  "text": "{body temperature is below 35°C}",
+                  "elements": [
+                    {
+                      "text": "body temperature is below 35°C",
+                      "type": "condition"
+                    }            
+                  ]
+                }
+              },
+              {
+                "text": "looks pale",
+                "type": "condition"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "rule_walk",
+      "text": "If {weather is comfortable} and {weekend is true} then go for a walk",
+      "elements": [
+        {
+          "text": "weather is comfortable",
+          "type": "rule",
+          "expansion": {
+            "text": "{temperature is above 70°F} and {humidity is below 60%}",
+            "elements": [
+              {
+                "text": "temperature is above 70°F",
+                "type": "condition"
+              },
+              {
+                "text": "humidity is below 60%",
+                "type": "condition"
+              }
+            ]
+          }
+        },
+        {
+          "text": "weekend is true",
+          "type": "condition"
+        }
+      ]
+    },
+    {
+      "id": "rule_database",
+      "text": "If {user is authenticated} and {user has access} then allow database modification",
+      "elements": [
+        {
+          "text": "user is authenticated",
+          "type": "rule",
+          "expansion": {
+            "text": "{user is logged in} and {session is not expired}",
+            "elements": [
+              {
+                "text": "user is logged in",
+                "type": "condition"
+              },
+              {
+                "text": "session is not expired",
+                "type": "condition"
+              }
+            ]
+          }
+        },
+        {
+          "text": "user has access",
+          "type": "rule",
+          "expansion": {
+            "text": "{user role is admin} or {user has special permission}",
+            "elements": [
+              {
+                "text": "user role is admin",
+                "type": "condition"
+              },
+              {
+                "text": "user has special permission",
+                "type": "condition"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

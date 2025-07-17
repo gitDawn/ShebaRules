@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Rules Engine</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .rule-container {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .rule-node {
+            background-color: #90EE90;
+            padding: 4px 8px;
+            margin: 2px;
+            display: inline-block;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #32CD32;
+            transition: background-color 0.2s;
+            position: relative;
+        }
+
+        .close-btn {
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+        }
+
+        .close-btn:hover {
+            background-color: #ff5252;
+        }
+
+        .condition-node {
+            background-color: #ffff99;
+            padding: 4px 8px;
+            margin: 2px;
+            display: inline-block;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #e6e600;
+            transition: background-color 0.2s;
+        }
+
+        .rule-node:hover {
+            background-color: #7FDD7F;
+        }
+
+        .condition-node:hover {
+            background-color: #ffff66;
+        }
+
+        .expansion {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-left: 4px solid #ffff99;
+            border-radius: 4px;
+            font-style: italic;
+        }
+
+        .expansion-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        .rule-text {
+            line-height: 1.6;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Interactive Rules Engine</h1>
+    
+    <div class="rule-container">
+        <div class="rule-text">
+            If the <span class="condition-node" data-type="condition">apple is green</span> and 
+            <span class="rule-node" data-type="rule" data-expansion="the [sun is shining] and [time is after 6am and before 6pm]" data-rule-id="rule_daytime">it's daytime<button class="close-btn" onclick="closeRuleExpansions('rule_daytime')" title="Close expansions">×</button></span> 
+            then wake up
+        </div>
+        <div id="expansion-1" class="expansion" style="display: none;">
+            <div class="expansion-header">Expanded rule: "it's daytime"</div>
+            <div>the <span class="rule-node" data-type="rule" data-expansion="there is [light in the sky] and [it's hot]">sun is shining</span> and 
+            <span class="condition-node" data-type="condition">time is after 6am and before 6pm</span></div>
+        </div>
+    </div>
+
+    <div class="rule-container">
+        <div class="rule-text">
+            If <span class="rule-node" data-type="rule" data-expansion="[temperature is above 70°F] and [humidity is below 60%]" data-rule-id="rule_weather">weather is comfortable<button class="close-btn" onclick="closeRuleExpansions('rule_weather')" title="Close expansions">×</button></span> 
+            and <span class="condition-node" data-type="condition">weekend is true</span> 
+            then go for a walk
+        </div>
+        <div id="expansion-2" class="expansion" style="display: none;">
+            <div class="expansion-header">Expanded rule: "weather is comfortable"</div>
+            <div><span class="condition-node" data-type="condition">temperature is above 70°F</span> and 
+            <span class="condition-node" data-type="condition">humidity is below 60%</span></div>
+        </div>
+    </div>
+
+    <div class="rule-container">
+        <div class="rule-text">
+            If <span class="rule-node" data-type="rule" data-expansion="[user is logged in] and [session is not expired]" data-rule-id="rule_auth">user is authenticated<button class="close-btn" onclick="closeRuleExpansions('rule_auth')" title="Close expansions">×</button></span> 
+            and <span class="rule-node" data-type="rule" data-expansion="[user role is admin] or [user has special permission]" data-rule-id="rule_access">user has access<button class="close-btn" onclick="closeRuleExpansions('rule_access')" title="Close expansions">×</button></span> 
+            then allow database modification
+        </div>
+        <div id="expansion-3" class="expansion" style="display: none;">
+            <div class="expansion-header">Click on a rule above to see its expansion</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize event listeners
+            attachEventListeners();
+        });
+
+        function parseExpansion(text) {
+            // Define which items should be rules vs conditions
+            const ruleDefinitions = {
+                'sun is shining': 'there is [light in the sky] and [it\'s hot]'
+            };
+            
+            // Replace [item] with appropriate spans based on whether it's a rule or condition
+            return text.replace(/\[([^\]]+)\]/g, function(match, content) {
+                if (ruleDefinitions[content]) {
+                    const ruleId = 'rule_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    return `<span class="rule-node" data-type="rule" data-expansion="${ruleDefinitions[content]}" data-rule-id="${ruleId}">${content}<button class="close-btn" onclick="closeRuleExpansions('${ruleId}')" title="Close expansions">×</button></span>`;
+                } else {
+                    return `<span class="condition-node" data-type="condition">${content}</span>`;
+                }
+            });
+        }
+
+        function attachEventListeners() {
+            // Attach click listeners to all rule nodes (including newly created ones)
+            document.querySelectorAll('.rule-node').forEach(node => {
+                if (!node.hasAttribute('data-listener-attached')) {
+                    node.setAttribute('data-listener-attached', 'true');
+                    node.addEventListener('click', function(event) {
+                        // Don't expand if clicking the close button
+                        if (event.target.classList.contains('close-btn')) {
+                            return;
+                        }
+                        
+                        const expansion = this.getAttribute('data-expansion');
+                        const container = this.closest('.rule-container');
+                        
+                        if (expansion) {
+                            const expandedText = parseExpansion(expansion);
+                            
+                            // Create a new expansion div for this rule
+                            const newExpansion = document.createElement('div');
+                            newExpansion.className = 'expansion';
+                            newExpansion.style.marginLeft = '20px'; // Indent nested expansions
+                            newExpansion.setAttribute('data-parent-rule', this.getAttribute('data-rule-id'));
+                            newExpansion.innerHTML = `
+                                <div class="expansion-header">Expanded rule: "${this.textContent.replace('×', '')}"</div>
+                                <div>${expandedText}</div>
+                            `;
+                            
+                            // Insert the new expansion after the clicked rule's parent element
+                            const parentElement = this.closest('.expansion') || container.querySelector('.rule-text');
+                            parentElement.insertAdjacentElement('afterend', newExpansion);
+                            
+                            // Attach listeners to newly created elements
+                            setTimeout(() => attachEventListeners(), 0);
+                        }
+                    });
+                }
+            });
+
+            // Attach click listeners to all condition nodes
+            document.querySelectorAll('.condition-node').forEach(node => {
+                if (!node.hasAttribute('data-listener-attached')) {
+                    node.setAttribute('data-listener-attached', 'true');
+                    node.addEventListener('click', function() {
+                        this.style.backgroundColor = '#ffff33';
+                        setTimeout(() => {
+                            this.style.backgroundColor = '#ffff99';
+                        }, 200);
+                    });
+                }
+            });
+        }
+
+        function closeRuleExpansions(ruleId) {
+            // Find and remove all expansions that belong to this rule and its nested rules
+            const expansions = document.querySelectorAll(`[data-parent-rule="${ruleId}"]`);
+            expansions.forEach(expansion => {
+                // First, close any nested expansions within this expansion
+                const nestedRules = expansion.querySelectorAll('.rule-node[data-rule-id]');
+                nestedRules.forEach(nestedRule => {
+                    const nestedRuleId = nestedRule.getAttribute('data-rule-id');
+                    closeRuleExpansions(nestedRuleId);
+                });
+                
+                // Then remove this expansion
+                expansion.remove();
+            });
+        }
+    </script>
+</body>
+</html>

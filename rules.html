@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Rules Engine</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .rule-container {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .rule-node {
+            background-color: #90EE90;
+            padding: 4px 8px;
+            margin: 2px;
+            display: inline-block;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #32CD32;
+            transition: background-color 0.2s;
+            position: relative;
+        }
+
+        .close-btn {
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+        }
+
+        .close-btn:hover {
+            background-color: #ff5252;
+        }
+
+        .condition-node {
+            background-color: #ffff99;
+            padding: 4px 8px;
+            margin: 2px;
+            display: inline-block;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #e6e600;
+            transition: background-color 0.2s;
+        }
+
+        .rule-node:hover {
+            background-color: #7FDD7F;
+        }
+
+        .condition-node:hover {
+            background-color: #ffff66;
+        }
+
+        .expansion {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-left: 4px solid #ffff99;
+            border-radius: 4px;
+            font-style: italic;
+        }
+
+        .expansion-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        .rule-text {
+            line-height: 1.6;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Interactive Rules Engine</h1>
+    
+    <div id="rules-container">
+        <!-- Rules will be dynamically loaded from JSON -->
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load rules from JSON file
+            loadRulesFromJSON();
+        });
+
+        async function loadRulesFromJSON() {
+            try {
+                const response = await fetch('rules.json');
+                const data = await response.json();
+                generateRulesHTML(data.rules);
+                attachEventListeners();
+            } catch (error) {
+                console.error('Error loading rules:', error);
+                document.getElementById('rules-container').innerHTML = '<p>Error loading rules. Please check that rules.json exists.</p>';
+            }
+        }
+
+        function generateRulesHTML(rules) {
+            const container = document.getElementById('rules-container');
+            container.innerHTML = '';
+            
+            rules.forEach(rule => {
+                const ruleContainer = document.createElement('div');
+                ruleContainer.className = 'rule-container';
+                
+                const ruleText = document.createElement('div');
+                ruleText.className = 'rule-text';
+                ruleText.innerHTML = parseRuleText(rule.text, rule.elements);
+                
+                ruleContainer.appendChild(ruleText);
+                container.appendChild(ruleContainer);
+            });
+        }
+
+        function parseRuleText(text, elements) {
+            let result = text;
+            
+            elements.forEach(element => {
+                const placeholder = `{${element.text}}`;
+                const ruleId = 'rule_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                
+                if (element.type === 'rule') {
+                    const expansionText = element.expansion ? element.expansion.text : '';
+                    result = result.replace(placeholder, 
+                        `<span class="rule-node" data-type="rule" data-expansion="${encodeExpansion(element.expansion)}" data-rule-id="${ruleId}">${element.text}<button class="close-btn" onclick="closeRuleExpansions('${ruleId}')" title="Close expansions">×</button></span>`
+                    );
+                } else {
+                    result = result.replace(placeholder, 
+                        `<span class="condition-node" data-type="condition">${element.text}</span>`
+                    );
+                }
+            });
+            
+            return result;
+        }
+
+        function encodeExpansion(expansion) {
+            if (!expansion) return '';
+            return JSON.stringify(expansion).replace(/"/g, '&quot;');
+        }
+
+
+        function attachEventListeners() {
+            // Attach click listeners to all rule nodes (including newly created ones)
+            document.querySelectorAll('.rule-node').forEach(node => {
+                if (!node.hasAttribute('data-listener-attached')) {
+                    node.setAttribute('data-listener-attached', 'true');
+                    node.addEventListener('click', function(event) {
+                        // Don't expand if clicking the close button
+                        if (event.target.classList.contains('close-btn')) {
+                            return;
+                        }
+                        
+                        const expansion = this.getAttribute('data-expansion');
+                        const container = this.closest('.rule-container');
+                        
+                        if (expansion) {
+                            // Parse the expansion from JSON format
+                            let expansionData;
+                            try {
+                                expansionData = JSON.parse(expansion.replace(/&quot;/g, '"'));
+                            } catch (e) {
+                                console.error('Error parsing expansion:', e);
+                                return;
+                            }
+                            
+                            const expandedText = parseRuleText(expansionData.text, expansionData.elements);
+                            
+                            // Create a new expansion div for this rule
+                            const newExpansion = document.createElement('div');
+                            newExpansion.className = 'expansion';
+                            newExpansion.style.marginLeft = '20px'; // Indent nested expansions
+                            newExpansion.setAttribute('data-parent-rule', this.getAttribute('data-rule-id'));
+                            newExpansion.innerHTML = `
+                                <div class="expansion-header">Expanded rule: "${this.textContent.replace('×', '')}"</div>
+                                <div>${expandedText}</div>
+                            `;
+                            
+                            // Insert the new expansion after the clicked rule's parent element
+                            const parentElement = this.closest('.expansion') || container.querySelector('.rule-text');
+                            parentElement.insertAdjacentElement('afterend', newExpansion);
+                            
+                            // Attach listeners to newly created elements
+                            setTimeout(() => attachEventListeners(), 0);
+                        }
+                    });
+                }
+            });
+
+            // Attach click listeners to all condition nodes
+            document.querySelectorAll('.condition-node').forEach(node => {
+                if (!node.hasAttribute('data-listener-attached')) {
+                    node.setAttribute('data-listener-attached', 'true');
+                    node.addEventListener('click', function() {
+                        this.style.backgroundColor = '#ffff33';
+                        setTimeout(() => {
+                            this.style.backgroundColor = '#ffff99';
+                        }, 200);
+                    });
+                }
+            });
+        }
+
+        function closeRuleExpansions(ruleId) {
+            // Find and remove all expansions that belong to this rule and its nested rules
+            const expansions = document.querySelectorAll(`[data-parent-rule="${ruleId}"]`);
+            expansions.forEach(expansion => {
+                // First, close any nested expansions within this expansion
+                const nestedRules = expansion.querySelectorAll('.rule-node[data-rule-id]');
+                nestedRules.forEach(nestedRule => {
+                    const nestedRuleId = nestedRule.getAttribute('data-rule-id');
+                    closeRuleExpansions(nestedRuleId);
+                });
+                
+                // Then remove this expansion
+                expansion.remove();
+            });
+        }
+    </script>
+</body>
+</html>
